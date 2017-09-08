@@ -1,12 +1,5 @@
 pragma solidity ^0.4.4;
 
-import "./ConvertLib.sol";
-
-// This is just a simple example of a coin-like contract.
-// It is not standards compatible and cannot be expected to talk to other
-// coin/token contracts. If you want to create a standards-compliant
-// token, see: https://github.com/ConsenSys/Tokens. Cheers!
-
 contract Splitter {
 	mapping (address => uint) public balances;
 	address public owner;
@@ -15,6 +8,7 @@ contract Splitter {
 
 	event Fund(address _recipient, uint256 _value, uint256 _total);
 	event Withdraw(address _recipient, uint256 _value);
+	event Kill();
 
 	function Splitter(address _owner, address _recipient1, address _recipient2) {
 		owner = _owner;
@@ -23,25 +17,20 @@ contract Splitter {
 		recipient2 = _recipient2;
 	}
 
-	function getBalance(address addr) returns(uint) {
-		require(addr == recipient1 || addr == recipient2);
-		return balances[addr];
-	}
-
-	function withdraw() {
-		uint256 amount;
-		require(msg.sender == recipient1 || msg.sender == recipient2);
-		address recipient = msg.sender;
-		amount = balances[recipient];
+	function withdraw() returns (bool success) {
+		uint256 amount = balances[msg.sender];
 		require(amount > 0);
-		balances[recipient] = 0;
-		recipient.transfer(amount);
-		Withdraw(recipient, amount);
+		balances[msg.sender] = 0;
+		msg.sender.transfer(amount);
+		Withdraw(msg.sender, amount);
+		return true;
 	}
 
-	function kill() {
+	function kill() returns (bool success) {
 		require(msg.sender == owner);
 		selfdestruct(owner);
+		Kill();
+		return true;
 	}
 
 	function () payable {
